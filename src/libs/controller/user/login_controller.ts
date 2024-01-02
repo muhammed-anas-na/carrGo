@@ -1,9 +1,8 @@
-import { Request , Response } from "express"
+import { NextFunction, Request , Response } from "express"
 
 export default (dependencies:any)=>{
-    const login =  async(req: Request,res: Response)=>{
+    const login =  async(req: Request,res: Response,next: NextFunction)=>{
         try{
-            console.log(dependencies)
             const {useCases:{loginUser_usecase}} = dependencies
             const {email,password} = req.body;
             const response = await loginUser_usecase(dependencies).execute(email,password);
@@ -15,6 +14,7 @@ export default (dependencies:any)=>{
             }
         }catch(err){
             console.log("Something went wrong." , err)
+            next(err)
         }
 
     }

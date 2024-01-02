@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
 import {user} from '../database/models/userModel'
-
+import bcrypt from 'bcrypt';
 interface signupData{
     first_name: string,
     last_name: string,
@@ -10,21 +10,63 @@ interface signupData{
     password: string
 }
 
+interface googleUserData{
+  user:{
+    email:string,
+    given_name: string,
+    family_name: string,
+  }
+}
 
 export default{
+  loginWithGoogle:async(userData: object)=>{    
+    const userExist = await user.findOne({email:(userData as googleUserData).user.email});
+    if(userExist){
+      return {userExist}
+    }else{
+      let newUser = new user({
+        first_name: (userData as googleUserData).user.given_name,
+        last_name: (userData as googleUserData).user.family_name,
+        email: (userData as googleUserData).user.email,
+      })
+      await newUser.save();
+      return {newUser};
+    }
+
+
+
+  },
+    checkCreadentials:async(email: string,password: string)=>{
+      const userExist = await user.findOne({email:email})
+      
+      if(userExist){
+        console.log("User exist")
+        if(userExist.password && typeof userExist.password === 'string'){
+        let status = await bcrypt.compare(password , userExist.password)
+        if(status){
+          console.log("Credentials are valid")
+          return userExist
+        }else{
+          throw new Error("Invalid password")
+        }
+        }
+      }else{
+        console.log("No user found")
+        throw new Error("Invalid Email")
+      }
+    },
     findUserByEmail:async(email: string)=>{
         const userObject = await user.findOne({email:email});
         Object.freeze(userObject);
         return userObject;
     },
 
-    insertUser:async(first_name: string,last_name: string,email: string,phone: string,alt_number: string,password: string)=>{
+    insertUser:async(first_name: string,last_name: string,email: string,phone: string,password: string)=>{
         let newUser = new user({
             first_name:first_name,
             last_name:last_name,
             email:email,
             phone:phone,
-            alt_number:alt_number,
             password:password,
             registration_date: Date.now()
         })
